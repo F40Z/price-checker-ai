@@ -9,6 +9,12 @@ const path = require("path");
 const app = express();
 const upload = multer();
 
+// --- 1. HEALTH CHECK (For UptimeRobot) ---
+// This keeps your app awake 24/7 on the Render free tier!
+app.get('/health', (req, res) => {
+    res.status(200).send('I am awake!');
+});
+
 // --- SETTINGS ---
 app.use(cors());
 // This line allows the server to look inside the "public" folder for images/css
