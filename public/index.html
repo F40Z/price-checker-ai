@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UAE AI Price Scout</title>
+    <style>
+        :root { --uae-blue: #00732f; --uae-red: #ff0000; }
+        body { font-family: 'Inter', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .app-card { background: white; max-width: 450px; margin: auto; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { background: #1a1a1a; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .drop-zone { border: 2px dashed #ccc; border-radius: 15px; padding: 40px; text-align: center; color: #666; transition: 0.3s; cursor: pointer; }
+        .drop-zone:hover { border-color: var(--uae-blue); background: #f9fffb; }
+        #preview { width: 100%; border-radius: 12px; margin-top: 15px; display: none; }
+        button { background: var(--uae-blue); color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        .result-box { margin-top: 20px; padding: 15px; background: #f8f9fa; border-left: 5px solid var(--uae-blue); display: none; white-space: pre-wrap; line-height: 1.6; }
+        .loading { display: none; text-align: center; padding: 20px; font-weight: bold; color: var(--uae-blue); }
+    </style>
+</head>
+<body>
+
+<div class="app-card">
+    <div class="header">
+        <h2 style="margin:0">🇦🇪 UAE Price Scout</h2>
+        <small>Smart AI Marketplace Valuator</small>
+    </div>
+    
+    <div class="content">
+        <div class="drop-zone" onclick="document.getElementById('fileIn').click()">
+            <b>Click to Upload</b><br>Analyze Cars, Phones, or Luxury Items
+            <input type="file" id="fileIn" hidden accept="image/*" onchange="showPreview(event)">
+            <img id="preview">
+        </div>
+
+        <button id="goBtn" onclick="runAI()" disabled>GET MARKET ANALYSIS</button>
+        
+        <div class="loading" id="load">🔍 Scanning UAE Markets...</div>
+
+        <div class="result-box" id="res"></div>
+    </div>
+</div>
+
+<script>
+    function showPreview(e) {
+        const p = document.getElementById('preview');
+        p.src = URL.createObjectURL(e.target.files[0]);
+        p.style.display = 'block';
+        document.getElementById('goBtn').disabled = false;
+    }
+
+    async function runAI() {
+        const file = document.getElementById('fileIn').files[0];
+        const btn = document.getElementById('goBtn');
+        const box = document.getElementById('res');
+        const loader = document.getElementById('load');
+
+        if (!file) return alert("Please upload an image first!");
+
+        // Update UI
+        btn.disabled = true;
+        loader.style.display = 'block';
+        box.style.display = 'none';
+
+        const form = new FormData();
+        form.append('image', file);
+
+        try {
+            const r = await fetch('/analyze', { method: 'POST', body: form });
+            const data = await r.json();
+            
+            if (data.success) {
+                // Show the AI analysis
+                box.innerHTML = `<strong>Product:</strong> ${data.product}<br><br>${data.ai_analysis}`;
+                box.style.display = 'block';
+            } else {
+                alert("Error: " + data.error);
+            }
+        } catch (err) {
+            alert("Could not connect to server. Is node server.js running?");
+        } finally {
+            loader.style.display = 'none';
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>
