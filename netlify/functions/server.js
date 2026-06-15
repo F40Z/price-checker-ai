@@ -1,101 +1,87 @@
-require('dotenv').config();
-const express = require("express");
-const multer = require("multer");
-const axios = require("axios");
-const Groq = require("groq-sdk");
-const cors = require("cors");
-const path = require("path");
+const express = require('express');
+const multer = require('multer');
+const { GoogleAuth } = require('google-auth-library');
+const serverless = require('serverless-http');
 
 const app = express();
-const upload = multer();
 
-// --- 1. HEALTH CHECK (For UptimeRobot) ---
-// This keeps your app awake 24/7 on the Render free tier!
-app.get('/health', (req, res) => {
-    res.status(200).send('I am awake!');
-});
+// Set up memory storage for image uploads (crucial for Netlify Serverless!)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-// --- SETTINGS ---
-app.use(cors());
-// This line allows the server to look inside the "public" folder for images/css
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-
-const groq = new Groq({ apiKey: GROQ_API_KEY });
-
-// --- GOOGLE VISION LOGIC ---
-async function detectWithGoogle(imageBuffer) {
-  try {
-    const base64Image = imageBuffer.toString("base64");
-    const response = await axios.post(
-      `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_API_KEY}`,
-      {
-        requests: [{
-            image: { content: base64Image },
-            features: [
-              { type: "LABEL_DETECTION", maxResults: 5 },
-              { type: "WEB_DETECTION", maxResults: 3 }
-            ]
-        }]
-      }
-    );
-    const labels = response.data.responses[0].labelAnnotations || [];
-    const web = response.data.responses[0].webDetection?.webEntities || [];
-    return [...web.map(w => w.description), ...labels.map(l => l.description)].join(", ");
-  } catch (error) {
-    console.error("Google Vision Error:", error.message);
-    throw new Error("Vision failed");
-  }
-}
-
-// --- THE FIX FOR "CANNOT GET /" ---
-// This tells the server: "When someone visits the main page, send them index.html"
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// --- API ROUTE FOR ANALYSIS ---
-app.post("/analyze", upload.single("image"), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: "Please upload an image." });
-
-    console.log("📸 Scanning image for UAE Market prices...");
-    const detectedKeywords = await detectWithGoogle(req.file.buffer);
-
-    const chat = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `You are a UAE Marketplace Expert. 
-          1. Identify the product from the keywords.
-          2. Provide a realistic price range in AED.
-          3. Recommend UAE platforms like Dubizzle, OpenSooq, Facebook Marketplace, etc.`
-        },
-        {
-          role: "user",
-          content: `Keywords: "${detectedKeywords}". What is this and what is it worth in the UAE?`
+// Main API analysis route
+app.post('/api/analyze', upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'No image file uploaded.' });
         }
-      ],
-      model: "llama-3.3-70b-versatile"
-    });
 
-    res.json({
-      success: true,
-      product: detectedKeywords.split(',')[0], 
-      ai_analysis: chat.choices[0].message.content
-    });
+        // Pull the API key we stored securely in your Netlify Environment Variables
+        const apiKey = process.env.GOOGLE_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({ success: false, error: 'Google API Key is not configured on the server.' });
+        }
 
-  } catch (error) {
-    console.error("Analysis Error:", error);
-    res.status(500).json({ error: "The AI had a hiccup. Check your API keys!" });
-  }
+        // Convert the uploaded image buffer to a base64 string for Google Vision
+        const imageBase64 = req.file.buffer.toString('base64');
+
+        // Prepare the payload for the Google Vision API
+        const visionUrl = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+        
+        const payload = {
+            requests: [
+                {
+                    image: { content: imageBase64 },
+                    features: [{ type: 'LABEL_DETECTION', maxResults: 10 }]
+                }
+            ]
+        };
+
+        // Send request to Google Vision
+        const response = await fetch(visionUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const visionData = await response.json();
+        
+        if (!visionData.responses || visionData.responses.length === 0) {
+            return res.status(500).json({ success: false, error: 'Failed to get a response from Google Vision.' });
+        }
+
+        const labels = visionData.responses[0].labelAnnotations;
+        if (!labels || labels.length === 0) {
+            return res.status(200).json({ 
+                success: true, 
+                product: "Unknown Item", 
+                ai_analysis: "The AI scanner couldn't confidently identify objects in this image. Please try a clearer picture!" 
+            });
+        }
+
+        // Grab the top detected item label
+        const topProduct = labels[0].description;
+
+        // Formulate a simple marketplace pricing response
+        const marketFeedback = `📈 **UAE Market Estimate Analysis**\n\n` +
+                               `• **Detected Item:** ${topProduct}\n` +
+                               `• **Status:** Successfully scanned via Google Vision!\n` +
+                               `• **Note:** To enable deeper automated AED valuations, integrate an OpenAI/Gemini text generation prompt text block here using the label data.`;
+
+        // Send successful JSON back to your index.html frontend
+        res.json({
+            success: true,
+            product: topProduct,
+            ai_analysis: marketFeedback
+        });
+
+    } catch (error) {
+        console.error("Server Error:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
-// --- START SERVER ---
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`\n🚀 SUCCESS! Your UAE AI Scout is ready.`);
-    console.log(`👉 Open your browser and go to: http://localhost:${PORT}\n`);
-});
+// ⚡ Netlify Serverless Wrapper (replaces app.listen)
+module.exports.handler = serverless(app);
