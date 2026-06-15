@@ -16,6 +16,29 @@
         button { background: var(--uae-blue); color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 20px; cursor: pointer; }
         .result-box { margin-top: 20px; padding: 15px; background: #f8f9fa; border-left: 5px solid var(--uae-blue); display: none; white-space: pre-wrap; line-height: 1.6; }
         .loading { display: none; text-align: center; padding: 20px; font-weight: bold; color: var(--uae-blue); }
+        
+        /* Centering and styling the unbreakable counter */
+        .counter-wrapper { 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 25px; 
+            padding-top: 15px; 
+            border-top: 1px dashed #e2e8f0;
+        }
+        .counter-wrapper p {
+            font-size: 13px;
+            color: #64748b;
+            margin: 0 0 10px 0;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .counter-img {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-radius: 6px;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -38,6 +61,11 @@
         <div class="loading" id="load">🔍 Scanning UAE Markets...</div>
 
         <div class="result-box" id="res"></div>
+
+        <div class="counter-wrapper">
+            <p>TOTAL APP VISITS</p>
+            <img class="counter-img" src="https://profile-counter.glitch.me/pricecheckerai-f4oz/count.svg" alt="Visitor Counter">
+        </div>
     </div>
 </div>
 
@@ -57,7 +85,6 @@
 
         if (!file) return alert("Please upload an image first!");
 
-        // Update UI
         btn.disabled = true;
         loader.style.display = 'block';
         box.style.display = 'none';
@@ -66,12 +93,10 @@
         form.append('image', file);
 
         try {
-            // Updated endpoint to use Netlify's serverless api proxy routing
             const r = await fetch('/api/analyze', { method: 'POST', body: form });
             const data = await r.json();
             
             if (data.success) {
-                // Show the AI analysis
                 box.innerHTML = `<strong>Product:</strong> ${data.product}<br><br>${data.ai_analysis}`;
                 box.style.display = 'block';
             } else {
