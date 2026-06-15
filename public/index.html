@@ -66,7 +66,8 @@
         form.append('image', file);
 
         try {
-            const r = await fetch('/analyze', { method: 'POST', body: form });
+            // Updated endpoint to use Netlify's serverless api proxy routing
+            const r = await fetch('/api/analyze', { method: 'POST', body: form });
             const data = await r.json();
             
             if (data.success) {
@@ -77,7 +78,7 @@
                 alert("Error: " + data.error);
             }
         } catch (err) {
-            alert("Could not connect to server. Is node server.js running?");
+            alert("Could not connect to server. Is your Netlify function active?");
         } finally {
             loader.style.display = 'none';
             btn.disabled = false;
