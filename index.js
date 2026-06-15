@@ -17,21 +17,18 @@
         .result-box { margin-top: 20px; padding: 15px; background: #f8f9fa; border-left: 5px solid var(--uae-blue); display: none; white-space: pre-wrap; line-height: 1.6; }
         .loading { display: none; text-align: center; padding: 20px; font-weight: bold; color: var(--uae-blue); }
         
-        /* Styling for your custom visitor counter */
+        /* Centering and styling the table counter layout */
         .counter-wrapper { 
-            text-align: center; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             margin-top: 25px; 
             padding-top: 15px; 
             border-top: 1px dashed #e2e8f0;
         }
-        .counter-wrapper p {
-            font-size: 12px; 
-            color: #64748b; 
-            margin: 0 0 8px 0;
-            font-weight: 500;
-        }
         .counter-wrapper a {
-            display: none !important; /* Hides the ugly backlink text safely */
+            display: none !important; /* Cleans up and hides the extra text links */
         }
     </style>
 </head>
@@ -57,10 +54,9 @@
         <div class="result-box" id="res"></div>
 
         <div class="counter-wrapper">
-            <p>Total App Visits</p>
-            <a href='http://www.freevisitorcounters.com'>Free counter</a>
-            <script type='text/javascript' src='https://www.freevisitorcounters.com/auth.php?id=e154e4c59ee24d2621fe6c49e44899ef04cfeea3'></script>
-            <script type="text/javascript" src="https://www.freevisitorcounters.com/en/home/counter/1573252/t/4"></script>
+            <a href='https://free-hit-counters.net/'>free Hit Counter</a>
+            <script type='text/javascript' src='https://www.freevisitorcounters.com/auth.php?id=c6cddeba595ae42784c1d30e56ba8c572972fd7d'></script>
+            <script type="text/javascript" src="https://www.freevisitorcounters.com/en/home/counter/1573265/t/0"></script>
         </div>
     </div>
 </div>
