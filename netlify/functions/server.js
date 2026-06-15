@@ -1,6 +1,5 @@
 const express = require('express');
 const multer = require('multer');
-const { GoogleAuth } = require('google-auth-library');
 const serverless = require('serverless-http');
 
 const app = express();
@@ -18,10 +17,10 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
             return res.status(400).json({ success: false, error: 'No image file uploaded.' });
         }
 
-        // Pull the API key we stored securely in your Netlify Environment Variables
+        // Pull the API key stored securely in your Netlify Environment Variables
         const apiKey = process.env.GOOGLE_API_KEY;
         if (!apiKey) {
-            return res.status(500).json({ success: false, error: 'Google API Key is not configured on the server.' });
+            return res.status(500).json({ success: false, error: 'Google API Key is not configured on Netlify.' });
         }
 
         // Convert the uploaded image buffer to a base64 string for Google Vision
@@ -65,10 +64,9 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
         const topProduct = labels[0].description;
 
         // Formulate a simple marketplace pricing response
-        const marketFeedback = `📈 **UAE Market Estimate Analysis**\n\n` +
-                               `• **Detected Item:** ${topProduct}\n` +
+        const marketFeedback = `\n\n• **Detected Item:** ${topProduct}\n` +
                                `• **Status:** Successfully scanned via Google Vision!\n` +
-                               `• **Note:** To enable deeper automated AED valuations, integrate an OpenAI/Gemini text generation prompt text block here using the label data.`;
+                               `• **Next Steps:** You can now integrate Groq or another LLM here to turn this label into a full valuation report!`;
 
         // Send successful JSON back to your index.html frontend
         res.json({
