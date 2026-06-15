@@ -1,90 +1,110 @@
-/*
-object-assign
-(c) Sindre Sorhus
-@license MIT
-*/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UAE AI Price Scout</title>
+    <style>
+        :root { --uae-blue: #00732f; --uae-red: #ff0000; }
+        body { font-family: 'Inter', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .app-card { background: white; max-width: 450px; margin: auto; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { background: #1a1a1a; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .drop-zone { border: 2px dashed #ccc; border-radius: 15px; padding: 40px; text-align: center; color: #666; transition: 0.3s; cursor: pointer; }
+        .drop-zone:hover { border-color: var(--uae-blue); background: #f9fffb; }
+        #preview { width: 100%; border-radius: 12px; margin-top: 15px; display: none; }
+        button { background: var(--uae-blue); color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        .result-box { margin-top: 20px; padding: 15px; background: #f8f9fa; border-left: 5px solid var(--uae-blue); display: none; white-space: pre-wrap; line-height: 1.6; }
+        .loading { display: none; text-align: center; padding: 20px; font-weight: bold; color: var(--uae-blue); }
+        
+        /* Styling for your custom visitor counter */
+        .counter-wrapper { 
+            text-align: center; 
+            margin-top: 25px; 
+            padding-top: 15px; 
+            border-top: 1px dashed #e2e8f0;
+        }
+        .counter-wrapper p {
+            font-size: 12px; 
+            color: #64748b; 
+            margin: 0 0 8px 0;
+            font-weight: 500;
+        }
+        .counter-wrapper a {
+            display: none !important; /* Hides the ugly backlink text safely */
+        }
+    </style>
+</head>
+<body>
 
-'use strict';
-/* eslint-disable no-unused-vars */
-var getOwnPropertySymbols = Object.getOwnPropertySymbols;
-var hasOwnProperty = Object.prototype.hasOwnProperty;
-var propIsEnumerable = Object.prototype.propertyIsEnumerable;
+<div class="app-card">
+    <div class="header">
+        <h2 style="margin:0">🇦🇪 UAE Price Scout</h2>
+        <small>Smart AI Marketplace Valuator</small>
+    </div>
+    
+    <div class="content">
+        <div class="drop-zone" onclick="document.getElementById('fileIn').click()">
+            <b>Click to Upload</b><br>Analyze Cars, Phones, or Luxury Items
+            <input type="file" id="fileIn" hidden accept="image/*" onchange="showPreview(event)">
+            <img id="preview">
+        </div>
 
-function toObject(val) {
-	if (val === null || val === undefined) {
-		throw new TypeError('Object.assign cannot be called with null or undefined');
-	}
+        <button id="goBtn" onclick="runAI()" disabled>GET MARKET ANALYSIS</button>
+        
+        <div class="loading" id="load">🔍 Scanning UAE Markets...</div>
 
-	return Object(val);
-}
+        <div class="result-box" id="res"></div>
 
-function shouldUseNative() {
-	try {
-		if (!Object.assign) {
-			return false;
-		}
+        <div class="counter-wrapper">
+            <p>Total App Visits</p>
+            <a href='http://www.freevisitorcounters.com'>Free counter</a>
+            <script type='text/javascript' src='https://www.freevisitorcounters.com/auth.php?id=e154e4c59ee24d2621fe6c49e44899ef04cfeea3'></script>
+            <script type="text/javascript" src="https://www.freevisitorcounters.com/en/home/counter/1573252/t/4"></script>
+        </div>
+    </div>
+</div>
 
-		// Detect buggy property enumeration order in older V8 versions.
+<script>
+    function showPreview(e) {
+        const p = document.getElementById('preview');
+        p.src = URL.createObjectURL(e.target.files[0]);
+        p.style.display = 'block';
+        document.getElementById('goBtn').disabled = false;
+    }
 
-		// https://bugs.chromium.org/p/v8/issues/detail?id=4118
-		var test1 = new String('abc');  // eslint-disable-line no-new-wrappers
-		test1[5] = 'de';
-		if (Object.getOwnPropertyNames(test1)[0] === '5') {
-			return false;
-		}
+    async function runAI() {
+        const file = document.getElementById('fileIn').files[0];
+        const btn = document.getElementById('goBtn');
+        const box = document.getElementById('res');
+        const loader = document.getElementById('load');
 
-		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
-		var test2 = {};
-		for (var i = 0; i < 10; i++) {
-			test2['_' + String.fromCharCode(i)] = i;
-		}
-		var order2 = Object.getOwnPropertyNames(test2).map(function (n) {
-			return test2[n];
-		});
-		if (order2.join('') !== '0123456789') {
-			return false;
-		}
+        if (!file) return alert("Please upload an image first!");
 
-		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
-		var test3 = {};
-		'abcdefghijklmnopqrst'.split('').forEach(function (letter) {
-			test3[letter] = letter;
-		});
-		if (Object.keys(Object.assign({}, test3)).join('') !==
-				'abcdefghijklmnopqrst') {
-			return false;
-		}
+        btn.disabled = true;
+        loader.style.display = 'block';
+        box.style.display = 'none';
 
-		return true;
-	} catch (err) {
-		// We don't expect any of the above to throw, but better to be safe.
-		return false;
-	}
-}
+        const form = new FormData();
+        form.append('image', file);
 
-module.exports = shouldUseNative() ? Object.assign : function (target, source) {
-	var from;
-	var to = toObject(target);
-	var symbols;
-
-	for (var s = 1; s < arguments.length; s++) {
-		from = Object(arguments[s]);
-
-		for (var key in from) {
-			if (hasOwnProperty.call(from, key)) {
-				to[key] = from[key];
-			}
-		}
-
-		if (getOwnPropertySymbols) {
-			symbols = getOwnPropertySymbols(from);
-			for (var i = 0; i < symbols.length; i++) {
-				if (propIsEnumerable.call(from, symbols[i])) {
-					to[symbols[i]] = from[symbols[i]];
-				}
-			}
-		}
-	}
-
-	return to;
-};
+        try {
+            const r = await fetch('/api/analyze', { method: 'POST', body: form });
+            const data = await r.json();
+            
+            if (data.success) {
+                box.innerHTML = `<strong>Product:</strong> ${data.product}<br><br>${data.ai_analysis}`;
+                box.style.display = 'block';
+            } else {
+                alert("Error: " + data.error);
+            }
+        } catch (err) {
+            alert("Could not connect to server. Is your Netlify function active?");
+        } finally {
+            loader.style.display = 'none';
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>
