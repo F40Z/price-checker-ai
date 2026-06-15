@@ -6,6 +6,6 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/server/:splat"
+  to = "/.netlify/functions/index/:splat"
   status = 200
   force = true
