@@ -43,17 +43,15 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
         });
 
         const visionData = await visionResponse.json();
-        
-        // Safe check for root response array
         const visionResult = visionData.responses?.[0];
+        
         if (!visionResult) {
-            return res.status(500).json({ success: false, error: 'Invalid Google Vision response structural setup.' });
+            return res.status(500).json({ success: false, error: 'Invalid Google Vision response structure.' });
         }
 
         const webDetection = visionResult.webDetection;
         const labels = visionResult.labelAnnotations;
         
-        // Safely extract web entity clues to identify exact models
         let identityGuesses = [];
         
         if (webDetection?.bestGuessLabels?.[0]?.label) {
@@ -72,30 +70,27 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
             });
         }
 
-        // Fallback names if matches fail
-        const fallbackProduct = labels?.[0]?.description || "Vehicle / Asset";
+        const fallbackProduct = labels?.[0]?.description || "Item";
         const finalTitle = webDetection?.bestGuessLabels?.[0]?.label || fallbackProduct;
-        
-        // Flatten array to strings for Groq prompt context
         const detailedContext = identityGuesses.length > 0 ? identityGuesses.join(', ') : fallbackProduct;
 
-        // 2. ASK GROQ AI TO SPECIFY MODEL & CALCULATE VALUATION
+        // 2. UNIVERSAL ASSET APPRAISAL PROMPT FOR GROQ
         const groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
-        const promptText = `You are an expert UAE marketplace car appraiser and luxury asset valuator. 
+        const promptText = `You are an expert UAE marketplace appraiser and luxury asset valuator. 
         An image matching engine analyzed a photo and extracted these web matching clues: "${detailedContext}".
         
         Your critical job:
-        1. Pinpoint the exact Year, Make, and Model of the vehicle from those clues (e.g., "2021 Jaguar F-Pace SVR", "2023 Jaguar E-Pace SE"). If the exact year is tight, use a precise model range.
+        1. Identify exactly what the item is (e.g., "PlayStation 5 Slim (1TB)", "2021 Jaguar F-Pace SVR", "iPhone 15 Pro Max"). Be as specific as possible regarding model/generation based on the clues.
         2. Output a beautifully organized marketplace report in clean Markdown format for a mobile application screen.
         
         Include:
-        - 🚗 **Exact Vehicle Identification**: Explicitly list your calculated Year, Make, Model, and Trim/Spec right at the start.
-        - 💰 **Estimated UAE Market Value Range**: Give an accurate estimated valuation range in AED based on the current Dubai/Abu Dhabi secondary market.
-        - 📊 **Market Demand Level**: Specific demand rating (High, Medium, Low) for this vehicle in the UAE.
-        - 📍 **Where to Sell It**: List specialized car portals (Dubizzle Motors, YallaMotor, CarSwitch, or luxury showrooms).
-        - 💡 **Pro-Tips for Selling**: Practical tips for getting a premium return on this specific make/type of vehicle in the UAE.
+        - 📦 **Exact Item Identification**: Explicitly state your calculated brand, specific model, and edition/spec right at the start. Use an appropriate emoji (e.g., 🚗 for cars, 🎮 for gaming, 📱 for phones).
+        - 💰 **Estimated UAE Market Value Range**: Give an accurate estimated second-hand valuation range in AED based on the current Dubai/Abu Dhabi secondary market.
+        - 📊 **Market Demand Level**: Specific demand rating (High, Medium, Low) for this specific item type in the UAE and a brief reason why.
+        - 📍 **Where to Sell It**: List targeted UAE channels. For cars use (Dubizzle Motors, YallaMotor, CarSwitch). For electronics/general items use (Dubizzle, Facebook Marketplace UAE, Amazon/Cartlow trade-in, or local classifieds groups).
+        - 💡 **Pro-Tips for Selling**: Practical tips for cleaning, packaging, listing, or factory-resetting to get a premium return for this specific item type in the UAE.
         
-        Be highly professional, direct, and omit any structural labels or system mentions. Give the answer directly to the user.`;
+        Be highly professional, direct, and dynamic based on the asset type. Do not use generic "N/A" placeholders. Give the analysis directly to the user.`;
 
         const groqResponse = await fetch(groqUrl, {
             method: 'POST',
@@ -111,9 +106,8 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
         });
 
         const groqData = await groqResponse.json();
-        const aiReport = groqData.choices?.[0]?.message?.content || "Error generating appraisal breakdown report.";
+        const aiReport = groqData.choices?.[0]?.message?.content || "Error generating appraisal report.";
 
-        // Send successful execution payload back to interface
         res.json({
             success: true,
             product: finalTitle.toUpperCase(),
